@@ -1,0 +1,81 @@
+pipeline {
+    agent any
+    tools {
+      jdk 'java'
+      maven 'maven'
+    }
+    triggers {
+      githubPush()
+    }
+    // some block
+        stages {
+             
+          stage('compile') {
+            steps {
+              // One or more steps need to be included within the steps block.
+             timestamps { 
+              echo 'Compile stage in progress..'
+              git 'https://github.com/emanjoh1/samplejavaapp'
+              sh 'mvn compile'
+             }
+            }
+          }
+        
+          stage('code review') {
+            steps {
+              // One or more steps need to be included within the steps block.
+              echo "code review in progress"
+              sh 'mvn -P metrics pmd:pmd'
+            }
+        
+            post {
+              // No post conditions specified
+              always {
+                // One or more steps need to be included within each condition's block.
+                recordIssues sourceCodeRetention: 'LAST_BUILD', tool: pmdParser(pattern: '**/pmd.xml')
+              }
+            }
+          }
+        
+          stage('unit test') {
+            steps {
+              // One or more steps need to be included within the steps block.
+              echo "unit test in progress"
+              sh 'mvn test'
+            }
+        
+            post {
+              // No post conditions specified
+              always {
+                // One or more steps need to be included within each condition's block.
+                 junit '**/target/surefire-reports/*.xml'
+              }
+            }
+          }
+        
+          stage('code coverage') {
+            steps {
+              // One or more steps need to be included within the steps block.
+              echo "code coverage in progress"
+              sh 'mvn verify'
+              
+            }
+        
+            post {
+              always {
+                // One or more steps need to be included within each condition's block.
+                jacoco()
+              }         // No post conditions
+            }
+          }
+        
+          stage('package') {
+            steps {
+              // One or more steps need to be included within the steps block.
+              echo "package in progress"
+              sh 'mvn package'
+            }
+          }
+        
+        }
+}
